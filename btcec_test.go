@@ -557,7 +557,7 @@ func TestBaseMult(t *testing.T) {
 
 func TestBaseMultVerify(t *testing.T) {
 	s256 := btcec.S256()
-	for bytes := 1; bytes < 35; bytes++ {
+	for bytes := 1; bytes < 40; bytes++ {
 		for i := 0; i < 30; i++ {
 			data := make([]byte, bytes)
 			_, err := rand.Read(data)

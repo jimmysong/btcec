@@ -628,14 +628,21 @@ func (curve *KoblitzCurve) ScalarMult(Bx, By *big.Int, k []byte) (*big.Int, *big
 // big endian integer.
 // Part of the elliptic.Curve interface.
 func (curve *KoblitzCurve) ScalarBaseMult(k []byte) (*big.Int, *big.Int) {
-	// Fall back to slower generic scalar point multiplication when the integer is
-	// larger than what can be used with the precomputed table which enables
-	// accelerated multiplication by the known fixed point.
+
+	var newK []byte
+	// Since the order of G is curve.N, we can use a much smaller number
+	// by doing modulo curve.N
 	if len(k) > len(curve.bytePoints) {
-		return curve.ScalarMult(curve.Gx, curve.Gy, k)
+		// reduce k by performing modulo curve.N
+		tmpK := big.NewInt(0)
+		tmpK.SetBytes(k)
+		tmpK.Mod(tmpK, curve.N)
+		newK = tmpK.Bytes()
+	} else {
+		newK = k
 	}
 
-	diff := len(curve.bytePoints) - len(k)
+	diff := len(curve.bytePoints) - len(newK)
 
 	// Point Q = ∞ (point at infinity).
 	qx, qy, qz := new(fieldVal), new(fieldVal), new(fieldVal)
@@ -645,7 +652,7 @@ func (curve *KoblitzCurve) ScalarBaseMult(k []byte) (*big.Int, *big.Int) {
 	// expressing k in base-256 which it already sort of is.
 	// Each "digit" in the 8-bit window can be looked up using bytePoints
 	// and added together.
-	for i, byteVal := range k {
+	for i, byteVal := range newK {
 		point := &curve.bytePoints[diff+i][byteVal]
 		curve.addJacobian(qx, qy, qz, &point[0], &point[1], &point[2], qx, qy, qz)
 	}
